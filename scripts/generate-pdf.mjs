@@ -3,9 +3,9 @@
 // and once hung a production deploy). Run by hand after editing
 // src/data/resume.ts: npm run generate:pdf
 //
-// Renders the real page in Chromium and prints it as one continuous page
-// (page height = content height) so no section or table row ever gets cut
-// across a page break, then commit the updated public/shahin-sarker-biodata.pdf.
+// Renders the real page in Chromium and prints it across standard A4 pages
+// (as many as the content needs), then commit the updated
+// public/shahin-sarker-biodata.pdf.
 
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
@@ -58,9 +58,8 @@ async function run() {
   });
 
   try {
-    // A4 width at 96 CSS px/inch, so the measured layout matches what
-    // page.pdf() actually renders at print time (avoids a viewport/print
-    // width mismatch that would make the height estimate come out short).
+    // A4 width at 96 CSS px/inch, so the rendered layout matches what
+    // page.pdf() actually prints at.
     const printWidthPx = 794;
     const page = await browser.newPage({ viewport: { width: printWidthPx, height: 1200 } });
     await page.goto(baseUrl, { waitUntil: "networkidle" });
@@ -68,13 +67,9 @@ async function run() {
     await page.waitForTimeout(300);
     await page.emulateMedia({ media: "print" });
 
-    const heightPx = await page.evaluate(() => document.documentElement.scrollHeight);
-    const heightIn = heightPx / 96 + 0.6;
-
     await page.pdf({
       path: outPath,
-      width: "210mm",
-      height: `${heightIn}in`,
+      format: "A4",
       printBackground: true,
       margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" },
     });
